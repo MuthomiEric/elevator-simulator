@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Elevator\CommandResult\LiftRequestResult.cs" Link="CommandResults\LiftRequestResult.cs" />
+    <Compile Include="..\Elevator\Interfaces\ICommand.cs" Link="Interfaces\ICommand.cs" />
+    <Compile Include="..\Elevator\Interfaces\ICommandResult.cs" Link="Interfaces\ICommandResult.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" Version="2.1.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+    <Folder Include="CommandResults\" />
+  </ItemGroup>
+
+</Project>

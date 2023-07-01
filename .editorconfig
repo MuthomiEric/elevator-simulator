@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# S2190: Recursion should not be infinite
+dotnet_diagnostic.S2190.severity = none
