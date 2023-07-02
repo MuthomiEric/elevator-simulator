@@ -153,8 +153,7 @@ public class ElevatorManager
 
         Models.Elevator closestElevator = GetClosestElevator(from, to);
 
-        var callerDirection = GetDirection(from, to, closestElevator); //closestElevator.FinalDestination > closestElevator.CurrentFloor ? Direction.Down : Direction.Up;
-
+        var callerDirection = GetDirection(from, to, closestElevator); 
 
         if (closestElevator.IsMoving)
             AddPickups(from, to, closestElevator);
