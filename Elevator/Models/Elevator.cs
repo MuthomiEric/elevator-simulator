@@ -5,8 +5,8 @@ namespace Elevator.Models;
 public class Elevator
 {
     public int CurrentFloor { get; private set; }
-    public int MovingTo { get; private set; }
-    public int FinalDestination { get; private set; }
+    public int MovingTo { get; set; }
+    public int FinalDestination { get; set; }
     public bool IsMoving { get; set; }
     public List<Person> People { get; private set; } = new List<Person>();
     public Dictionary<int, List<Person>> PickUps { get; private set; } = new Dictionary<int, List<Person>>();
@@ -71,17 +71,17 @@ public class Elevator
         Move(direction, callingAt, goingTo);
     }
 
-    public void Move(Direction direction, int callingAt, int goingTo)
+    public void Move(Direction direction, int from, int to)
     {
         IsMoving = true;
 
         Direction = direction;
 
-        MovingTo = callingAt;
+        MovingTo = from;
 
-        FinalDestination = goingTo;
+        FinalDestination = to;
 
-        while (MoveWhen(direction, callingAt))
+        while (MoveWhen(Direction, from, to))
         {
             // Drop first to create space the pick
             Drop();
@@ -99,47 +99,25 @@ public class Elevator
                 break;
             }
 
-            if (direction == Direction.Up)
+            if (Direction == Direction.Up)
                 CurrentFloor++;
 
-            if (direction == Direction.Down)
+            if (Direction == Direction.Down)
                 CurrentFloor--;
         }
     }
 
     // This helps to check when the lift should be moving
-    public bool MoveWhen(Direction direction, int floorTo)
+    public bool MoveWhen(Direction direction, int from, int to)
     {
         if (direction == Direction.Up)
         {
-            return CurrentFloor <= floorTo;
+            return CurrentFloor <= from;
         }
 
         if (direction == Direction.Down)
         {
-            return CurrentFloor >= floorTo;
-        }
-
-        return false;
-    }
-
-    // Checks whether a moving lift can pick passeger along the way
-    public bool CanPick(Direction direction, int floor)
-    {
-        if (direction == Direction.Up)
-        {
-            if (CurrentFloor < floor && MovingTo > floor)
-                return true;
-
-            else return false;
-        }
-
-        if (direction == Direction.Down)
-        {
-            if (CurrentFloor > floor && MovingTo < floor)
-                return true;
-
-            else return false;
+            return CurrentFloor >= to;
         }
 
         return false;
@@ -204,11 +182,29 @@ public class Elevator
 
             Console.WriteLine($"{Label}:");
             Console.WriteLine($"- Current floor: {CurrentFloor}");
-            Console.WriteLine($"- Direction: {Direction}");
+            Console.WriteLine($"- Direction: {Direction.Stopped}");
             Console.WriteLine($"- Number of people: {People.Count}");
             Console.WriteLine("*******************************************************");
 
         }
+    }
+
+    public int GetDistance(int from, int to)
+    {
+        var dir = from > to ? Direction.Down : Direction.Up;
+        // Means moving on the same direction
+        if (Direction.Equals(dir))
+        {
+            if (dir == Direction.Up && CurrentFloor < from)
+                return CurrentFloor - to;
+            if (dir == Direction.Down && CurrentFloor > from)
+                return CurrentFloor - to;
+        }
+
+        if (Direction.Equals(Direction.Stopped) && CurrentFloor >= from)
+            return CurrentFloor - to;
+
+        return ((Math.Abs(CurrentFloor - from)) + Math.Abs(from - to));
     }
 
     public bool AddAPerson(Person person)

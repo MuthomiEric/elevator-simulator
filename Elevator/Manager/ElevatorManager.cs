@@ -95,22 +95,7 @@ public class ElevatorManager
 
         var counter = 0;
 
-        if (_floors.ContainsKey(lift.CurrentFloor))
-        {
-            foreach (var person in _floors[lift.CurrentFloor].ToList())
-            {
-                if (!lift.AddAPerson(person))
-                    break;
-
-                // Remove each picked passager
-                _floors[lift.CurrentFloor].Remove(person);
-
-                counter++;
-            }
-            // If all passager were picked remove the floor
-            if (!_floors[lift.CurrentFloor].Any())
-                _floors.Remove(lift.CurrentFloor);
-        }
+        PickUp(lift, ref counter);
 
         if (lift.FinalDestination != lift.CurrentFloor)
         {
@@ -129,6 +114,12 @@ public class ElevatorManager
 
             lift.SendTo(lift.FinalDestination, lift.FinalDestination, direction);
         }
+
+        lift.Direction = Direction.Stopped;
+        lift.IsMoving = false;
+        lift.MovingTo = 0;
+        lift.FinalDestination = 0;
+
     }
 
     #endregion
@@ -141,12 +132,84 @@ public class ElevatorManager
             return Direction.Down;
     }
 
-    public void CallElevator(int fromFloor, int toFloor)
+    private Direction GetDirection(int from, int to, Models.Elevator lift)
     {
+        if (!lift.IsMoving && lift.CurrentFloor > 1)
+        {
+            if (from > to)
+                return Direction.Down;
+
+            else
+                return Direction.Up;
+        }
+
+        return lift.FinalDestination > lift.CurrentFloor ? Direction.Down : Direction.Up;
+    }
+
+    public void CallElevator(int from, int to)
+    {
+        if (!AddFloors(from, to))
+            return;
+
+        Models.Elevator closestElevator = GetClosestElevator(from, to);
+
+        var callerDirection = GetDirection(from, to, closestElevator); //closestElevator.FinalDestination > closestElevator.CurrentFloor ? Direction.Down : Direction.Up;
+
+
+        if (closestElevator.IsMoving)
+            AddPickups(from, to, closestElevator);
+
+        closestElevator.SendTo(from, to, callerDirection);
+    }
+
+    private void AddPickups(int from, int to, Models.Elevator elevator)
+    {
+        if (elevator.PickUps.ContainsKey(from))
+        {
+            elevator.PickUps[from].Add(new Person(from, to));
+        }
+        else
+        {
+            elevator.PickUps.Add(from, new List<Person>());
+
+            elevator.PickUps[from].Add(new Person(from, to));
+        }
+    }
+
+    private void PickUp(Models.Elevator elevator, ref int counter)
+    {
+        if (_floors.ContainsKey(elevator.CurrentFloor))
+        {
+            foreach (var person in _floors[elevator.CurrentFloor].ToList())
+            {
+                if (!elevator.AddAPerson(person))
+                    break;
+
+                // Remove each picked passager
+                _floors[elevator.CurrentFloor].Remove(person);
+
+                counter++;
+            }
+            // If all passager were picked remove the floor
+            if (!_floors[elevator.CurrentFloor].Any())
+                _floors.Remove(elevator.CurrentFloor);
+        }
+    }
+
+    private bool AddFloors(int fromFloor, int toFloor)
+    {
+        if (toFloor.Equals(fromFloor))
+        {
+            Console.WriteLine("Please select the floor!!");
+
+            return false;
+        }
+
         if (_floors.ContainsKey(fromFloor))
         {
             _floors[fromFloor].Add(new Person(fromFloor, toFloor));
         }
+
         else
         {
             _floors.Add(fromFloor, new List<Person>());
@@ -154,23 +217,10 @@ public class ElevatorManager
             _floors[fromFloor].Add(new Person(fromFloor, toFloor));
         }
 
-        if (toFloor.Equals(fromFloor))
-        {
-            Console.WriteLine("Please select the floor!!");
-
-            return;
-        }
-
-        var direction = toFloor > fromFloor ? Direction.Up : Direction.Down;
-
-        Models.Elevator closestElevator = GetClosestElevator(fromFloor, toFloor, direction);
-
-        var callerDirection = closestElevator.FinalDestination > closestElevator.CurrentFloor ? Direction.Down : Direction.Up;
-
-        closestElevator.SendTo(fromFloor, toFloor, callerDirection);
+        return true;
     }
 
-    private Models.Elevator GetClosestElevator(int floor, int floorTo, Direction direction)
+    private Models.Elevator GetClosestElevator(int from, int to)
     {
         Models.Elevator closestElevator = null;
 
@@ -178,28 +228,7 @@ public class ElevatorManager
 
         foreach (Models.Elevator elevator in _availableElevators)
         {
-            int distance = Math.Abs(elevator.CurrentFloor - floor);
-
-            if (elevator.IsMoving)
-            {
-                if (elevator.CanPick(direction, floor))
-                {
-                    if (elevator.PickUps.ContainsKey(floor))
-                    {
-                        elevator.PickUps[floor].Add(new Person(floor, floorTo));
-                    }
-                    else
-                    {
-                        elevator.PickUps.Add(floor, new List<Person>());
-
-                        elevator.PickUps[floor].Add(new Person(floor, floorTo));
-                    }
-
-                    return elevator;
-                }
-
-                distance = int.MaxValue;
-            }
+            int distance = Math.Abs(elevator.GetDistance(from, to));
 
             if (distance < minDistance)
             {
@@ -208,7 +237,6 @@ public class ElevatorManager
                 closestElevator = elevator;
             }
         }
-
         return closestElevator;
     }
 
